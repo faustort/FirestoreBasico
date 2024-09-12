@@ -1,7 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
-import { Button, Surface, Text } from 'react-native-paper';
+import { Button, Provider, Surface, Text } from 'react-native-paper';
 import InserirDocumento from './src/screens/InserirDocumento';
 import ListarNotas from './src/screens/ListarNotas';
 
@@ -9,13 +9,15 @@ const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator>
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="InserirDocumento" component={InserirDocumento} />
-        <Stack.Screen name="ListarNotas" component={ListarNotas} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <Provider>
+      <NavigationContainer>
+        <Stack.Navigator>
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="InserirDocumento" component={InserirDocumento} />
+          <Stack.Screen name="ListarNotas" component={ListarNotas} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </Provider>
   );
 }
 
