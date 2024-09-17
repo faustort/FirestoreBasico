@@ -1,6 +1,14 @@
-import { updateDoc } from "firebase/firestore";
-import { collection, deleteDoc, doc, getDocs } from "firebase/firestore"; // Importa as funções do Firestore para buscar coleções e documentos.
-import { useState, useEffect } from "react"; // Importa o useState para gerenciar o estado e o useEffect para controlar os efeitos colaterais.
+// Importação dos métodos do Firestore para operações de CRUD e busca de dados
+import {
+  updateDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+} from "firebase/firestore";
+// Importação dos hooks do React
+import { useState, useEffect } from "react";
+// Importação dos componentes do React Native Paper para interface
 import {
   Button,
   Card,
@@ -10,78 +18,74 @@ import {
   Surface,
   Text,
   TextInput,
-} from "react-native-paper"; // Importa componentes visuais do React Native Paper.
-import { db } from "../config/firebase"; // Importa a instância do Firebase configurada.
-import { FlatList, View } from "react-native"; // Importa o componente FlatList para renderizar listas de itens de forma eficiente.
+} from "react-native-paper";
+// Importação da configuração do banco de dados do Firebase
+import { db } from "../config/firebase";
+// Importação dos componentes do React Native para layout
+import { FlatList, View } from "react-native";
 
+// Componente funcional para listar notas
 export default function ListarNotas() {
-  const [notas, setNotas] = useState([]); // Define o estado "notas" com um array vazio inicialmente.
+  const [notas, setNotas] = useState([]); // Estado para armazenar as notas obtidas do Firebase
+  const [visible, setVisible] = useState(false); // Estado para controlar a visibilidade do modal
+  const [notaId, setNotaId] = useState(null); // Estado para armazenar o ID da nota selecionada
+  const [isEditing, setIsEditing] = useState(false); // Estado para controlar se está no modo de edição
+  const [nota, setNota] = useState(""); // Estado para armazenar o valor da nota durante a edição
 
-  // Programática do Modal
-  const [visible, setVisible] = useState(false);
-  const [notaId, setNotaId] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [nota, setNota] = useState("");
-
+  // Função para exibir o modal de remoção
   const showModal = (id) => {
     setVisible(true);
     setNotaId(id);
   };
+
+  // Função para exibir o modal de edição
   const showEditModal = (id) => {
     setIsEditing(true);
     showModal(id);
   };
 
+  // Função para ocultar o modal
   const hideModal = () => setVisible(false);
 
-  // useEffect é utilizado para executar efeitos colaterais após a renderização do componente.
+  // Efeito para carregar notas do Firebase ao montar o componente
   useEffect(() => {
-    listarNotasDoFirebase(); // Chama a função para listar as notas do Firebase quando o componente for montado.
-  }, []); // O array vazio [] garante que este efeito seja executado apenas uma vez após o componente ser montado.
+    listarNotasDoFirebase();
+  }, []);
 
-  // Função assíncrona para buscar as notas no Firebase.
+  // Função assíncrona para buscar notas na coleção "notas" do Firebase
   async function listarNotasDoFirebase() {
-    const notasRef = collection(db, "notas"); // Acessa a coleção "notas" no Firestore.
-    const notasSnapshot = await getDocs(notasRef); // Busca todos os documentos da coleção "notas".
-    console.log(notasSnapshot.docs); // Loga os documentos retornados.
-    console.log(notasSnapshot.docs.map((doc) => doc.data())); // Loga os dados dos documentos.
-    setNotas(notasSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))); // Atualiza o estado "notas" com os dados e IDs dos documentos.
+    const notasRef = collection(db, "notas");
+    const notasSnapshot = await getDocs(notasRef);
+    const notasList = notasSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    setNotas(notasList);
   }
+
+  // Função assíncrona para salvar as alterações de uma nota no Firebase
   async function salvarNota() {
     const notaRef = doc(db, "notas", notaId);
-    await updateDoc(notaRef, {
-      titulo: nota,
-    });
+    await updateDoc(notaRef, { titulo: nota });
     await listarNotasDoFirebase();
     hideModal();
     setIsEditing(false);
   }
 
+  // Função assíncrona para remover uma nota do Firebase
   async function removerNota() {
-    const id = notaId;
-    try {
-      const notaRef = doc(db, "notas", id);
-      await deleteDoc(notaRef);
-      await listarNotasDoFirebase();
-      hideModal();
-    } catch (error) {
-      console.error("Error removing note:", error);
-      // Handle the error appropriately (e.g., show an error message to the user)
-    }
+    const notaRef = doc(db, "notas", notaId);
+    await deleteDoc(notaRef);
+    await listarNotasDoFirebase();
+    hideModal();
   }
 
+  // Renderização do componente
   return (
-    <Surface
-      style={{
-        flex: 1,
-        alignItems: "center", // Centraliza os itens horizontalmente.
-      }}
-    >
+    <Surface style={{ flex: 1, alignItems: "center" }}>
       <Text>Notas inseridas</Text>
-      {/* FlatList é utilizado para renderizar listas de forma eficiente. */}
-
       <FlatList
-        data={notas} // Passa o estado "notas" como fonte de dados.
+        data={notas}
         style={{ width: "100%" }}
         renderItem={({ item }) => (
           <View
@@ -92,28 +96,23 @@ export default function ListarNotas() {
             }}
           >
             <Text>{item.titulo}</Text>
-            <View
-              style={{
-                justifyContent: "space-between",
-                display: "flex",
-                flexDirection: "row",
-              }}
-            >
+            <View style={{ flexDirection: "row" }}>
               <IconButton icon="delete" onPress={() => showModal(item.id)} />
-              <IconButton icon="note-edit-outline" onPress={() => showEditModal(item.id)} />
+              <IconButton
+                icon="note-edit-outline"
+                onPress={() => showEditModal(item.id)}
+              />
             </View>
           </View>
-        )} // Renderiza cada item da lista, acessando a propriedade "titulo".
-        keyExtractor={(item) => item.id} // Gera uma chave única para cada item usando o "id".
+        )}
+        keyExtractor={(item) => item.id}
       />
-
       <Portal>
         <Modal visible={visible} onDismiss={hideModal} style={{ margin: 40 }}>
           {isEditing ? (
             <Card>
               <Card.Title title="Editar nota" />
               <Card.Content>
-                <Text>Conteúdo do modal de edição</Text>
                 <TextInput
                   label="Novo título"
                   value={nota}
@@ -127,9 +126,9 @@ export default function ListarNotas() {
             </Card>
           ) : (
             <Card>
-              <Card.Title title="Título do modal" />
+              <Card.Title title="Remover nota" />
               <Card.Content>
-                <Text>Conteúdo do modal</Text>
+                <Text>Você deseja remover esta nota?</Text>
               </Card.Content>
               <Card.Actions>
                 <Button onPress={hideModal}>Cancelar</Button>
